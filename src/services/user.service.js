@@ -10,6 +10,11 @@ export const getUserByIdFromDb = async (id) => {
   return await User.findOne({ _id: id });
 };
 
+export const getUserByUsernameFromDb = async (username) => {
+  const user = await User.findOne({ username: username });
+  return user
+};
+
 export const updateUserBalance = async (id, newCLovers) => {
   const refillStatus = await User.findOneAndUpdate(
     { _id: id},

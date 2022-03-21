@@ -1,6 +1,10 @@
 import Koa from "Koa";
 import cors from "@koa/cors";
+import json from "koa-json";
+import jwt from "koa-jwt";
 import bodyParser from "koa-bodyparser";
+import Path from "path";
+import { config } from "dotenv";
 import Router from "koa-router";
 import {
   getUserById,
@@ -10,13 +14,30 @@ import {
   registerUser,
   userTicketPayment,
 } from "./src/controller/user.controller.js";
-import { fetchAllProducts, getProductById } from "./src/controller/product.controller.js";
-import { fetchFullStorage, getStorageItemById } from "./src/controller/storage.controller.js";
-import { sessionExists, getActiveSession, activateNewSession, updateActiveSession } from "./src/controller/session.controller.js";
-
+import {
+  fetchAllProducts,
+  getProductById,
+} from "./src/controller/product.controller.js";
+import {
+  fetchFullStorage,
+  getStorageItemById,
+} from "./src/controller/storage.controller.js";
+import {
+  sessionExists,
+  getActiveSession,
+  activateNewSession,
+  updateActiveSession,
+} from "./src/controller/session.controller.js";
+import {
+  login,
+  register,
+  findUserByUsername,
+} from "./src/controller/auth.controller.js";
 import initDB from "./src/db/connect.js";
 
 initDB();
+
+config({ path: Path.resolve(".env") });
 
 const app = new Koa();
 const router = new Router();
@@ -31,14 +52,38 @@ app.use(async (ctx, next) => {
   }
 });
 
-app.use(cors());
+app.use(json());
 app.use(bodyParser());
+app.use(cors());
+// auth middleware
+app.use(
+  jwt({
+    secret: process.env.JWT_SECRET,
+  }).unless({
+    path: ["/login"],
+  })
+);
 
-router.get("/session/status", async (ctx) => {
-  const session = await sessionExists();
+router.post("/register", async (ctx) => {
+  // console.log('/register')
+  // console.log(ctx)
+  const registerUser = await register(ctx.request.body.newUser);
   ctx.status = 200;
-  ctx.body = { status: session };
-});
+  ctx.body = { userId: registerUser };
+}),
+  router.post("/login", async (ctx) => {
+    const userLoging = await login(
+      ctx.request.body.username,
+      ctx.request.body.password
+    );
+    ctx.status = 200;
+    ctx.body = { status: userLoging };
+  }),
+  router.get("/session/status", async (ctx) => {
+    const session = await sessionExists();
+    ctx.status = 200;
+    ctx.body = { status: session };
+  });
 
 router.get("/session/get-active", async (ctx) => {
   const session = await getActiveSession();
@@ -56,7 +101,7 @@ router.post("/session/update", async (ctx) => {
   const session = await updateActiveSession(ctx.request.body.sessionData);
   ctx.status = 200;
   ctx.body = session;
-})
+});
 
 router.get("/users", async (ctx) => {
   const users = await fetchAllUsers();
@@ -74,7 +119,7 @@ router.get("/product/get/:id", async (ctx) => {
   const item = await getProductById(ctx.params.id);
   ctx.status = 200;
   ctx.body = item;
-})
+});
 
 router.get("/storage/all", async (ctx) => {
   const items = await fetchFullStorage();
@@ -86,7 +131,7 @@ router.get("/storage/get/item/:id", async (ctx) => {
   const item = await getStorageItemById(ctx.params.id);
   ctx.status = 200;
   ctx.body = item;
-})
+});
 
 router.post("/new-user", async (ctx) => {
   const newUserRegistration = await registerUser(ctx.request.body.newUserData);
@@ -124,6 +169,35 @@ router.post("/user/:id/new-order", async (ctx) => {
   ctx.body = { availableClovers: newClovers };
 });
 
-app.use(router.routes()).use(router.allowedMethods());
+try {
+  // initialize the auth service
+  // await auth.init();
 
-app.listen(8080, () => console.log("Listening on port 8080..."));
+  // inject $user based on the auth token
+  app.use(async (ctx, next) => {
+    const jwtUser = ctx.state?.user?.data;
+    // if a jwt token is present then fetch the user of that token
+    if (jwtUser != null && jwtUser.username) {
+      try {
+        ctx.$user = await findUserByUsername(jwtUser.username);
+        if (ctx.$user == null) {
+          throw new Error();
+        }
+      } catch (ex) {
+        console.log(ex);
+        ctx.status = 401;
+        return;
+      }
+    }
+    await next();
+  });
+
+  // Configure routes
+  //app.use(configureRouter().routes());
+
+  app.use(router.routes()).use(router.allowedMethods());
+  app.listen(8080, () => console.log("Listening on port 8080..."));
+} catch (ex) {
+  console.log("Startup error:", "error");
+  console.log(ex);
+}
