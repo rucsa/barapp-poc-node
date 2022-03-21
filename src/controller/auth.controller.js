@@ -18,7 +18,7 @@ export const findUserByUsername = async (username) => {
   return await getUserByUsernameFromDb(username)
 } 
 
-export const register = async (newUserObj) => {
+export const register = async (newUserObj, creator) => {
   const requestingUser = await getUserByUsernameFromDb(newUserObj.username);
   if (requestingUser != null) {
     throw new DetailedError({
@@ -40,9 +40,13 @@ export const register = async (newUserObj) => {
   // register the user with the specified password
 var newUserId
   try {
+    if (newUserObj.acceessLevel == null) {
+      newUserObj.acceessLevel = 'MEMBER'
+    }
+
     const plainPass = newUserObj.password;
     newUserObj.password = await bcrypt.hash(plainPass, 10);
-    //newUserObj.createdBy = token.createdBy
+    newUserObj.createdBy = creator
     newUserId = await createUserInDb(newUserObj);
   } catch (error) {
     throw new DetailedError({
@@ -54,6 +58,34 @@ var newUserId
   }
   return newUserId
 };
+
+export const registerSimple = async (newUserObj, creator) => {
+  const requestingUser = await getUserByUsernameFromDb(newUserObj.username);
+  if (requestingUser != null) {
+    throw new DetailedError({
+      code: "username-already-registered",
+      message: "This username has already been registered!",
+      emitter: EMITTER_ID,
+    });
+  }
+
+  // register the user with the specified password
+var newUserId
+  try {
+    newUserObj.acceessLevel = 'MEMBER'
+    newUserObj.createdBy = creator
+    newUserId = await createUserInDb(newUserObj);
+  } catch (error) {
+    throw new DetailedError({
+      code: "auth.register.unknown",
+      message: `Unknown error while register user for token ${newUserObj.username}!`,
+      causedBy: error,
+      emitter: EMITTER_ID,
+    });
+  }
+  return newUserId
+};
+
 
 export const login = async (username, password) => {
   if (username == null || password == null) {
@@ -81,7 +113,6 @@ export const login = async (username, password) => {
   }
   const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24;
   const expiresAtDate = new Date(expiresAt * 1000).toISOString();
-  console.log(process.env.JWT_SECRET);
   const token = jwt.sign(
     {
       data: {

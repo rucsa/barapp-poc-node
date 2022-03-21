@@ -31,6 +31,7 @@ import {
 import {
   login,
   register,
+  registerSimple,
   findUserByUsername,
 } from "./src/controller/auth.controller.js";
 import initDB from "./src/db/connect.js";
@@ -60,24 +61,56 @@ app.use(
   jwt({
     secret: process.env.JWT_SECRET,
   }).unless({
-    path: ["/login"],
+    path: ["/auth/login"],
   })
 );
 
 router.post("/register", async (ctx) => {
-  // console.log('/register')
-  // console.log(ctx)
-  const registerUser = await register(ctx.request.body.newUser);
-  ctx.status = 200;
-  ctx.body = { userId: registerUser };
+  if (ctx.$user.accessLevel === "ADMIN") {
+    const registerUser = await register(
+      ctx.request.body.newUser,
+      ctx.$user.username
+    );
+    ctx.status = 200;
+    ctx.body = { userId: registerUser };
+  } else {
+    ctx.status = 401;
+  }
 }),
-  router.post("/login", async (ctx) => {
+  router.post("/register-simple", async (ctx) => {
+    console.log(ctx.$user);
+    if (
+      ctx.$user.accessLevel === "ADMIN" ||
+      ctx.$user.accessLevel === "STAFF"
+    ) {
+      const registerUser = await registerSimple(
+        ctx.request.body.newUser,
+        ctx.$user.username
+      );
+      ctx.status = 200;
+      ctx.body = { userId: registerUser };
+    } else {
+      ctx.status = 401;
+    }
+  }),
+  router.post("/auth/login", async (ctx) => {
     const userLoging = await login(
       ctx.request.body.username,
       ctx.request.body.password
     );
     ctx.status = 200;
-    ctx.body = { status: userLoging };
+    ctx.body = userLoging;
+  }),
+  router.get("/auth/user", async (ctx) => {
+    try {
+      const user = ctx.$user;
+      delete user.password;
+      ctx.status = 200;
+      ctx.body = user;
+    } catch (error) {
+      console.log(error);
+      ctx.status = 500;
+    }
   }),
   router.get("/session/status", async (ctx) => {
     const session = await sessionExists();

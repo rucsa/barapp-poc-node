@@ -11,8 +11,10 @@ const UserSchema = new Schema({
   availableClovers: Number,
   guestOf: String,
   createdAt: Date,
+  createdBy: String,
   lastUpdatedAt: Date,
-  payedTicketThisSession: Boolean
+  payedTicketThisSession: Boolean,
+  accessLevel: String
 }); 
   
 export default mongoose.model('User', UserSchema);
