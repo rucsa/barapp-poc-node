@@ -5,41 +5,41 @@ import _ from 'lodash';
  * Inspire by the structure of errors in Java.
  * @param {String} code - Unique code
  * @param {String} message
- * @param {String} emitter - Unique id of the emitter
+ * @param {String} inFile - Unique id of the inFile
  * @param {Object} [args]
  * @param {Error} [causedBy]
  * @returns {Error}
  * @constructor
  */
-export default function DetailedError({
-  code, message, emitter, args = null, causedBy = null,
+export default function PrettyError({
+  code, message, inFile, args = null, causedBy = null,
 }) {
   const instance = new Error(message);
 
-  instance.name = 'DetailedError';
+  instance.name = 'PrettyError';
   instance.code = code;
-  instance.emitter = emitter;
+  instance.inFile = inFile;
   // TODO: Should the args be deep cloned?
   instance.args = args == null ? null : _.cloneDeep(args);
 
   const stack = (instance.stack || '')
     .replace(`${instance.name}: ${instance.message}`, '');
 
-  // returns the stack with the error's code, emitter and args included
+  // returns the stack with the error's code, inFile and args included
   instance.fullStack = `${instance.name}(code=${code}): ${message}
-    emitter: ${emitter}
+    inFile: ${inFile}
     args: ${JSON.stringify(args, null, 2)}
     ${stack}
     causedBy: ${causedBy == null ? '' : (causedBy.fullStack || causedBy.stack || causedBy.message)}`;
 
   Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
   if (Error.captureStackTrace) {
-    Error.captureStackTrace(instance, DetailedError);
+    Error.captureStackTrace(instance, PrettyError);
   }
   return instance;
 }
 
-DetailedError.prototype = Object.create(Error.prototype, {
+PrettyError.prototype = Object.create(Error.prototype, {
   constructor: {
     value: Error,
     enumerable: false,
@@ -48,4 +48,4 @@ DetailedError.prototype = Object.create(Error.prototype, {
   },
 });
 
-Object.setPrototypeOf(DetailedError, Error);
+Object.setPrototypeOf(PrettyError, Error);
