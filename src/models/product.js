@@ -1,12 +1,21 @@
-import mongoose from 'mongoose'; 
+import mongoose from "mongoose";
+const Schema = mongoose.Schema;
 
-const Schema = mongoose.Schema; 
-
-const ProductSchema = new Schema({ 
+const Recipe = new Schema({
+  portie: Number,
+  productCode: Number,
   _id: mongoose.Types.ObjectId,
-  denumire: String, 
+});
+
+
+const ProductSchema = new Schema({
+  _id: mongoose.Types.ObjectId,
+  currentQty: Number,
+  denumire: String,
   clovers: Number,
-  color: String
-}); 
-  
-export default mongoose.model('Product', ProductSchema);
+  color: String,
+  mix: [Recipe],
+  currentQty: Number,
+});
+
+export default mongoose.model("Product", ProductSchema);

@@ -1,4 +1,4 @@
-import Koa from "Koa";
+import Koa from "koa";
 import cors from "@koa/cors";
 import json from "koa-json";
 import jwt from "koa-jwt";
@@ -13,28 +13,29 @@ import {
   registerNewOrder,
   registerUser,
   userTicketPayment,
-} from "./src/controller/user.controller.js";
+} from "./controller/user.controller.js";
 import {
   fetchAllProducts,
   getProductById,
-} from "./src/controller/product.controller.js";
+} from "./controller/product.controller.js";
 import {
   fetchFullStorage,
   getStorageItemById,
-} from "./src/controller/storage.controller.js";
+  updateStorageItem
+} from "./controller/storage.controller.js";
 import {
   sessionExists,
   getActiveSession,
   activateNewSession,
   updateActiveSession,
-} from "./src/controller/session.controller.js";
+} from "./controller/session.controller.js";
 import {
   login,
   register,
   registerSimple,
   findUserByUsername,
-} from "./src/controller/auth.controller.js";
-import initDB from "./src/db/connect.js";
+} from "./controller/auth.controller.js";
+import initDB from "./db/connect.js";
 
 initDB();
 
@@ -218,6 +219,18 @@ router.get("/storage/all", async (ctx) => {
 router.get("/storage/get/item/:id", async (ctx) => {
   try {
     const item = await getStorageItemById(ctx.params.id);
+    ctx.status = 200;
+    ctx.body = item;
+  } catch (error) {
+    ctx.body = error;
+    ctx.status = 500;
+  }
+});
+
+router.post("/storage/update-item", async (ctx) => {
+  console.log(ctx.request.body.storageItem)
+  try {
+    const item = await updateStorageItem(ctx.request.body.storageItem);
     ctx.status = 200;
     ctx.body = item;
   } catch (error) {

@@ -2,15 +2,19 @@
   "name": "node-api",
   "version": "2.0.0",
   "description": "TCApp",
-  "main": "index.js",
+  "main": "./src/index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon app.js",
-    "test": "test"
+    "dev": "nodemon ./src/index.js",
+    "test": "test",
+    "build": "babel src -d dist",
+    "prod": "browserify dist/index.js > bundle.js",
+    "start": "node ./src/index.js"
   },
   "author": "Devix Developments",
   "license": "ISC",
   "dependencies": {
+    "@babel/runtime": "^7.17.8",
     "@koa/cors": "^3.2.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.0.0",
@@ -25,9 +29,20 @@
     "path": "^0.12.7"
   },
   "devDependencies": {
+    "@babel/cli": "^7.17.6",
+    "@babel/core": "^7.17.8",
+    "@babel/plugin-transform-runtime": "^7.17.0",
+    "@babel/preset-env": "^7.16.11",
+    "babel-core": "^6.26.3",
     "babel-eslint": "^10.1.0",
+    "babel-loader": "^8.2.4",
+    "babel-node": "^0.0.1-security",
+    "babel-plugin-module-resolver": "^4.1.0",
+    "browserify": "^17.0.0",
     "eslint": "^8.1.0",
     "eslint-config-standard": "^16.0.3",
+    "eslint-import-resolver-babel-module": "^5.3.1",
+    "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.0.0",
     "nodemon": "^2.0.15",
