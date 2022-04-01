@@ -5,7 +5,7 @@ import {
   createUserInDb,
 } from "./../services/user.service.js";
 import bcrypt from "bcryptjs";
-const FILE = "src/controller/auth.controller.js";
+const EMITTER_ID = "src/controller/auth.controller.js";
 
 // function isValidPassword(password) {
 //   // (minimum: 1 upper char, 1 lower char, 1 special character, 1 digit)
@@ -24,7 +24,7 @@ export const register = async (newUserObj, creator) => {
     throw new PrettyError({
       code: "email-already-registered",
       message: "This username has already been registered!",
-      inFile: FILE,
+      inFile: EMITTER_ID,
     });
   }
 
@@ -33,7 +33,7 @@ export const register = async (newUserObj, creator) => {
 //       code: "auth.register.invalid-password",
 //       message:
 //         "The password must contain at least one lowercase char, one uppercase char, one digit and a symbol!",
-//       inFile: FILE,
+//       inFile: EMITTER_ID,
 //     });
 //   }
 
@@ -53,7 +53,7 @@ var newUserId
       code: "auth.register.unknown",
       message: `Unknown error while register user for token ${newUserObj.username}!`,
       causedBy: error,
-      inFile: FILE,
+      inFile: EMITTER_ID,
     });
   }
   return newUserId
@@ -65,7 +65,7 @@ export const registerSimple = async (newUserObj, creator) => {
     throw new PrettyError({
       code: "username-already-registered",
       message: "This username has already been registered!",
-      inFile: FILE,
+      inFile: EMITTER_ID,
     });
   }
 
@@ -80,7 +80,7 @@ var newUserId
       code: "auth.register.unknown",
       message: `Unknown error while register user for token ${newUserObj.username}!`,
       causedBy: error,
-      inFile: FILE,
+      inFile: EMITTER_ID,
     });
   }
   return newUserId
@@ -92,7 +92,7 @@ export const login = async (username, password) => {
     throw new PrettyError({
       code: "incomplete_credentials",
       message: "username or password missing from request.",
-      inFile: FILE,
+      inFile: EMITTER_ID,
     });
   }
   const user = await getUserByUsernameFromDb(username);
@@ -100,7 +100,7 @@ export const login = async (username, password) => {
     throw new PrettyError({
       code: "user_not_found",
       message: `username ${username} was not found in db.`,
-      inFile: FILE,
+      inFile: EMITTER_ID,
     });
   }
   const match = await bcrypt.compare(password, user.password);
@@ -108,7 +108,7 @@ export const login = async (username, password) => {
     throw new PrettyError({
       code: "invalid_password",
       message: `invalid password for username ${username}`,
-      inFile: FILE,
+      inFile: EMITTER_ID,
     });
   }
   const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24;
@@ -122,7 +122,8 @@ export const login = async (username, password) => {
       // 60 seconds * 60 minutes * 24 = 1 day
       expiresAt,
     },
-    process.env.JWT_SECRET
+    //process.env.JWT_SECRET
+    'HBocGnplIiwiiUEFjF1bHZvb'
   );
   return { token, expiresAt: expiresAtDate };
 };
@@ -133,7 +134,7 @@ export const login = async (username, password) => {
 //     throw new PrettyError({
 //       code: "user_unknown",
 //       message: "user not found in db.",
-//       inFile: FILE,
+//       inFile: EMITTER_ID,
 //     });
 //   }
 //   if (user.password != null) {
@@ -142,7 +143,7 @@ export const login = async (username, password) => {
 //       throw new PrettyError({
 //         code: "wrong_old_password",
 //         message: "wrong old password",
-//         inFile: FILE,
+//         inFile: EMITTER_ID,
 //       });
 //     }
 //   }
@@ -150,7 +151,7 @@ export const login = async (username, password) => {
 //     throw new PrettyError({
 //       code: "invalid_new_password",
 //       message: "new password does not meet requirements",
-//       inFile: FILE,
+//       inFile: EMITTER_ID,
 //     });
 //   }
 //   const encryptedPassword = await bcrypt.hash(newPass, 10);
@@ -167,7 +168,7 @@ export const login = async (username, password) => {
 //       code: "update_error",
 //       message: "error updating user in db",
 //       causedBy: error,
-//       inFile: FILE,
+//       inFile: EMITTER_ID,
 //     });
 //   }
 //   return user.userId;

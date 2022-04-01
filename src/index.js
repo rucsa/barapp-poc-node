@@ -61,7 +61,7 @@ app.use(cors());
 // auth middleware
 app.use(
   jwt({
-    secret: process.env.JWT_SECRET,
+    secret: 'HBocGnplIiwiiUEFjF1bHZvb',
   }).unless({
     path: ["/auth/login"],
   })
@@ -88,7 +88,8 @@ router.post("/register", async (ctx) => {
     try {
       if (
         ctx.$user.accessLevel === "ADMIN" ||
-        ctx.$user.accessLevel === "STAFF"
+        ctx.$user.accessLevel === "STAFF" ||
+        ctx.$user.accessLevel === "SERGEANT"
       ) {
         const registerUser = await registerSimple(
           ctx.request.body.newUser,
@@ -113,7 +114,8 @@ router.post("/register", async (ctx) => {
       ctx.status = 200;
       ctx.body = userLoging;
     } catch (error) {
-      ctx.body = error;
+      console.log(error)
+      ctx.body = error.fullStack;
       ctx.status = 500;
     }
   }),

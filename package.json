@@ -2,7 +2,7 @@
   "name": "node-api",
   "version": "2.0.0",
   "description": "TCApp",
-  "main": "./src/index.js",
+  "main": "./index.js",
   "type": "module",
   "scripts": {
     "dev": "nodemon ./src/index.js",
