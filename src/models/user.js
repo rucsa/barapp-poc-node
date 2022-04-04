@@ -9,13 +9,19 @@ const UserSchema = new Schema({
   firstname: String,
   lastname: String,
   phone: String,
+  email: String,
   availableClovers: Number,
   guestOf: String,
   createdAt: Date,
   createdBy: String,
   lastUpdatedAt: Date,
   payedTicketThisSession: Boolean,
-  accessLevel: String
+  ticketDonationValue: Number,
+  donationMethod: String,
+  checkedInThisSession: Boolean,
+  accessLevel: String,
+  revoId: String,
+  changePassRequestCode: String,
 }); 
   
 export default mongoose.model('User', UserSchema);

@@ -3,12 +3,32 @@ import { getStorageItemByProductCode } from "./storage.service.js";
 import mongoose from "mongoose";
 const ObjectId = mongoose.Types.ObjectId;
 
+export const createProductInDB = async (prodData) => {
+  var newProd = new Product(prodData);
+  const productId = ObjectId()
+  newProd._id = productId
+  const prodSaved = await newProd.save().then(null, function (err) { 
+    throw new Error(err); 
+  });
+  return prodSaved;
+};
+
 export const getAllProductsFromDB = async () => {
   return await Product.find({});
 };
 
 export const getProductByIdFromDB = async (id) => {
   return await Product.findOne({ _id: id });
+};
+
+export const updateProductInDB = async (id, newProd) => {
+  try {
+    return await Product.findOneAndUpdate({ _id: id }, newProd, {
+      new: true,
+    });
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 export const updateProductQtyAtStorageUpdate = async (storageItem) => {
@@ -24,14 +44,13 @@ export const updateProductQtyAtStorageUpdate = async (storageItem) => {
     // decide which item from recipt has less total ml
     let minAvailabilePortions = Number.MAX_VALUE;
     for (let mixItem of product.mix) {
-      console.log("mix item:");
-      console.log(mixItem);
       const usedItem = await getStorageItemByProductCode(mixItem.productCode);
       console.log("found product by code " + mixItem.productCode);
-      console.log(usedItem);
-      console.log(`maxAvailablePortions = ${usedItem[0].size} * ${usedItem[0].qty} / ${mixItem.portie}`)
+      console.log(
+        `maxAvailablePortions = ${usedItem[0].size} * ${usedItem[0].qty} / ${mixItem.portie}`
+      );
       const maxAvailablePortions =
-        usedItem[0].size * usedItem[0].qty / mixItem.portie;
+        (usedItem[0].size * usedItem[0].qty) / mixItem.portie;
       console.log(
         `We have ${maxAvailablePortions} portions of ${mixItem.productCode}`
       );
@@ -53,4 +72,5 @@ export const updateProductQtyAtStorageUpdate = async (storageItem) => {
       console.log(error);
     }
   }
+  return true;
 };

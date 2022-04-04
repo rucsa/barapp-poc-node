@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import {
   getUserByUsernameFromDb,
   createUserInDb,
+  isUsernameUnique,
+  isEmailUnique,
 } from "./../services/user.service.js";
 import bcrypt from "bcryptjs";
 const EMITTER_ID = "src/controller/auth.controller.js";
@@ -15,39 +17,47 @@ const EMITTER_ID = "src/controller/auth.controller.js";
 // }
 
 export const findUserByUsername = async (username) => {
-  return await getUserByUsernameFromDb(username)
-} 
+  return await getUserByUsernameFromDb(username);
+};
 
 export const register = async (newUserObj, creator) => {
-  const requestingUser = await getUserByUsernameFromDb(newUserObj.username);
-  if (requestingUser != null) {
+  const usernameCheck = await isUsernameUnique(newUserObj.username);
+  if (usernameCheck !== true) {
     throw new PrettyError({
-      code: "email-already-registered",
-      message: "This username has already been registered!",
+      code: "username-taken",
+      message: "Username is taken!",
+      inFile: EMITTER_ID,
+    });
+  }
+  // validate unique email
+  const emailCheck = await isEmailUnique(newUserObj.email);
+  if (emailCheck !== true) {
+    throw new PrettyError({
+      code: "email-taken",
+      message: "Email is taken!",
       inFile: EMITTER_ID,
     });
   }
 
-//   if (!isValidPassword(newUserObj.password)) {
-//     throw new PrettyError({
-//       code: "auth.register.invalid-password",
-//       message:
-//         "The password must contain at least one lowercase char, one uppercase char, one digit and a symbol!",
-//       inFile: EMITTER_ID,
-//     });
-//   }
+  //   if (!isValidPassword(newUserObj.password)) {
+  //     throw new PrettyError({
+  //       code: "auth.register.invalid-password",
+  //       message:
+  //         "The password must contain at least one lowercase char, one uppercase char, one digit and a symbol!",
+  //       inFile: EMITTER_ID,
+  //     });
+  //   }
 
   // register the user with the specified password
-var newUserId
   try {
     if (newUserObj.acceessLevel == null) {
-      newUserObj.acceessLevel = 'MEMBER'
+      newUserObj.acceessLevel = "MEMBER";
     }
-
     const plainPass = newUserObj.password;
     newUserObj.password = await bcrypt.hash(plainPass, 10);
-    newUserObj.createdBy = creator
+    newUserObj.createdBy = creator;
     newUserId = await createUserInDb(newUserObj);
+    return newUserId;
   } catch (error) {
     throw new PrettyError({
       code: "auth.register.unknown",
@@ -56,26 +66,35 @@ var newUserId
       inFile: EMITTER_ID,
     });
   }
-  return newUserId
 };
 
 export const registerSimple = async (newUserObj, creator) => {
-  const requestingUser = await getUserByUsernameFromDb(newUserObj.username);
-  if (requestingUser != null) {
+  const usernameCheck = await isUsernameUnique(newUserObj.username);
+  if (usernameCheck !== true) {
     throw new PrettyError({
-      code: "username-already-registered",
-      message: "This username has already been registered!",
+      code: "username-taken",
+      message: "Username is taken!",
+      inFile: EMITTER_ID,
+    });
+  }
+  // validate unique email
+  const emailCheck = await isEmailUnique(newUserObj.email);
+  if (emailCheck !== true) {
+    throw new PrettyError({
+      code: "email-taken",
+      message: "Email is taken!",
       inFile: EMITTER_ID,
     });
   }
 
   // register the user with the specified password
-var newUserId
   try {
-    newUserObj.acceessLevel = 'MEMBER'
-    newUserObj.createdBy = creator
-    newUserId = await createUserInDb(newUserObj);
+    newUserObj.acceessLevel = "MEMBER";
+    newUserObj.createdBy = creator;
+    const newUserId = await createUserInDb(newUserObj);
+    return newUserId;
   } catch (error) {
+    console.log(error)
     throw new PrettyError({
       code: "auth.register.unknown",
       message: `Unknown error while register user for token ${newUserObj.username}!`,
@@ -83,9 +102,7 @@ var newUserId
       inFile: EMITTER_ID,
     });
   }
-  return newUserId
 };
-
 
 export const login = async (username, password) => {
   if (username == null || password == null) {
@@ -113,6 +130,7 @@ export const login = async (username, password) => {
   }
   const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24;
   const expiresAtDate = new Date(expiresAt * 1000).toISOString();
+  console.log(expiresAtDate);
   const token = jwt.sign(
     {
       data: {
@@ -123,7 +141,7 @@ export const login = async (username, password) => {
       expiresAt,
     },
     //process.env.JWT_SECRET
-    'HBocGnplIiwiiUEFjF1bHZvb'
+    "HBocGnplIiwiiUEFjF1bHZvb"
   );
   return { token, expiresAt: expiresAtDate };
 };

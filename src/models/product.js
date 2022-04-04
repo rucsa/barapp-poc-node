@@ -7,13 +7,13 @@ const Recipe = new Schema({
   _id: mongoose.Types.ObjectId,
 });
 
-
 const ProductSchema = new Schema({
   _id: mongoose.Types.ObjectId,
   currentQty: Number,
   denumire: String,
   clovers: Number,
   color: String,
+  textColor: String,
   mix: [Recipe],
   currentQty: Number,
 });

@@ -26,3 +26,13 @@ export const getStorageItemByProductCode = async (productCode) => {
   });
   return storageItem
 }
+export const createStorageItemInDB = async (itemData) => {
+
+var newItem = new StorageItem(itemData);
+const itemId = ObjectId()
+newItem._id = itemId
+const itemSaved = await newItem.save().then(null, function (err) { 
+  throw new Error(err); 
+});
+return itemSaved;
+}

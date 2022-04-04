@@ -13,18 +13,24 @@ import {
   registerNewOrder,
   registerUser,
   userTicketPayment,
+  requestPassChange, processPassChange
 } from "./controller/user.controller.js";
 import {
   fetchAllProducts,
   getProductById,
+  editProduct,
+  createProduct,
 } from "./controller/product.controller.js";
 import {
   fetchFullStorage,
   getStorageItemById,
-  updateStorageItem
+  updateStorageItem,
+  createStorageItem,
 } from "./controller/storage.controller.js";
 import {
+  getTicketValue,
   sessionExists,
+  sessionStatus,
   getActiveSession,
   activateNewSession,
   updateActiveSession,
@@ -35,6 +41,9 @@ import {
   registerSimple,
   findUserByUsername,
 } from "./controller/auth.controller.js";
+import { fetchAllRefills } from "./controller/refill.controller.js";
+import { createNewOrder } from "./controller/order.controller.js";
+createNewOrder;
 import initDB from "./db/connect.js";
 
 initDB();
@@ -61,11 +70,14 @@ app.use(cors());
 // auth middleware
 app.use(
   jwt({
-    secret: 'HBocGnplIiwiiUEFjF1bHZvb',
+    secret: "HBocGnplIiwiiUEFjF1bHZvb",
   }).unless({
-    path: ["/auth/login"],
+    path: ["/auth/login", "register", "/user/request-change"],
   })
 );
+
+// ---- START APIs ----
+// ---- AUTH ----
 
 router.post("/register", async (ctx) => {
   try {
@@ -81,7 +93,7 @@ router.post("/register", async (ctx) => {
     }
   } catch (error) {
     ctx.status = 500;
-    ctx.body = error;
+    ctx.body = error.message;
   }
 }),
   router.post("/register-simple", async (ctx) => {
@@ -101,7 +113,7 @@ router.post("/register", async (ctx) => {
         ctx.status = 401;
       }
     } catch (error) {
-      ctx.body = error;
+      ctx.body = error.message;
       ctx.status = 500;
     }
   }),
@@ -114,7 +126,7 @@ router.post("/register", async (ctx) => {
       ctx.status = 200;
       ctx.body = userLoging;
     } catch (error) {
-      console.log(error)
+      console.log(error);
       ctx.body = error.fullStack;
       ctx.status = 500;
     }
@@ -130,16 +142,40 @@ router.post("/register", async (ctx) => {
       ctx.status = 500;
     }
   }),
-  router.get("/session/status", async (ctx) => {
+  // ---- SESSION ----
+
+  router.get("/ticket-value", async (ctx) => {
     try {
-      const session = await sessionExists();
+      const value = await getTicketValue();
       ctx.status = 200;
-      ctx.body = { status: session };
+      ctx.body = { clovers: value };
     } catch (error) {
       ctx.body = error;
       ctx.status = 500;
     }
   });
+
+router.get("/session/active", async (ctx) => {
+  try {
+    const session = await sessionExists();
+    ctx.status = 200;
+    ctx.body = { status: session };
+  } catch (error) {
+    ctx.body = error;
+    ctx.status = 500;
+  }
+});
+
+router.get("/session/status/:sessionId", async (ctx) => {
+  try {
+    const status = await sessionStatus(ctx.params.sessionId);
+    ctx.status = 200;
+    ctx.body = status;
+  } catch (error) {
+    ctx.body = error;
+    ctx.status = 500;
+  }
+});
 
 router.get("/session/get-active", async (ctx) => {
   try {
@@ -154,7 +190,10 @@ router.get("/session/get-active", async (ctx) => {
 
 router.post("/session/new", async (ctx) => {
   try {
-    const session = await activateNewSession(ctx.request.body.sessionData);
+    const session = await activateNewSession(
+      ctx.request.body.sessionData,
+      ctx.$user.username
+    );
     ctx.status = 200;
     ctx.body = session;
   } catch (error) {
@@ -165,7 +204,10 @@ router.post("/session/new", async (ctx) => {
 
 router.post("/session/update", async (ctx) => {
   try {
-    const session = await updateActiveSession(ctx.request.body.sessionData);
+    const session = await updateActiveSession(
+      ctx.request.body.sessionData,
+      ctx.$user.username
+    );
     ctx.status = 200;
     ctx.body = session;
   } catch (error) {
@@ -174,16 +216,19 @@ router.post("/session/update", async (ctx) => {
   }
 });
 
-router.get("/users", async (ctx) => {
+// ---- REFILLS ----
+router.get("/refills", async (ctx) => {
   try {
-    const users = await fetchAllUsers();
+    const refills = await fetchAllRefills();
     ctx.status = 200;
-    ctx.body = users;
+    ctx.body = refills;
   } catch (error) {
     ctx.body = error;
     ctx.status = 500;
   }
 });
+
+// ---- PRODUCTS ----
 
 router.get("/products", async (ctx) => {
   try {
@@ -206,6 +251,35 @@ router.get("/product/get/:id", async (ctx) => {
     ctx.status = 500;
   }
 });
+
+router.post("/product/create", async (ctx) => {
+  try {
+    const createdProductId = await createProduct(ctx.request.body.itemData);
+    ctx.body = createdProductId;
+    ctx.status = 200;
+  } catch (error) {
+    console.log(error);
+    ctx.body = error;
+    ctx.status = 500;
+  }
+});
+
+router.post("/product/edit/:id", async (ctx) => {
+  try {
+    const updatedProduct = await editProduct(
+      ctx.params.id,
+      ctx.request.body.itemData
+    );
+    ctx.body = updatedProduct;
+    ctx.status = 200;
+  } catch (error) {
+    console.log(error);
+    ctx.body = error;
+    ctx.status = 500;
+  }
+});
+
+// ---- STORAGE ----
 
 router.get("/storage/all", async (ctx) => {
   try {
@@ -230,11 +304,36 @@ router.get("/storage/get/item/:id", async (ctx) => {
 });
 
 router.post("/storage/update-item", async (ctx) => {
-  console.log(ctx.request.body.storageItem)
+  console.log(ctx.request.body.storageItem);
   try {
     const item = await updateStorageItem(ctx.request.body.storageItem);
     ctx.status = 200;
     ctx.body = item;
+  } catch (error) {
+    ctx.body = error;
+    ctx.status = 500;
+  }
+});
+
+router.post("/storage/create-item", async (ctx) => {
+  console.log(ctx.request.body.storageItem);
+  try {
+    const item = await createStorageItem(ctx.request.body.storageItem);
+    ctx.status = 200;
+    ctx.body = item;
+  } catch (error) {
+    ctx.body = error;
+    ctx.status = 500;
+  }
+});
+
+// ---- USER ----
+
+router.get("/users", async (ctx) => {
+  try {
+    const users = await fetchAllUsers();
+    ctx.status = 200;
+    ctx.body = users;
   } catch (error) {
     ctx.body = error;
     ctx.status = 500;
@@ -267,7 +366,22 @@ router.get("/profile/:id", async (ctx) => {
 
 router.get("/user/:id/pay-ticket", async (ctx) => {
   try {
-    const newClovers = await userTicketPayment(ctx.params.id);
+    const newClovers = await userTicketPayment(ctx.params.id, null, null);
+    ctx.status = 200;
+    ctx.body = { availableClovers: newClovers };
+  } catch (error) {
+    ctx.body = error;
+    ctx.status = 500;
+  }
+});
+
+router.post("/user/:id/pay-ticket", async (ctx) => {
+  try {
+    const newClovers = await userTicketPayment(
+      ctx.params.id,
+      ctx.request.body.ticketValue,
+      ctx.request.body.donationMethod
+    );
     ctx.status = 200;
     ctx.body = { availableClovers: newClovers };
   } catch (error) {
@@ -279,8 +393,11 @@ router.get("/user/:id/pay-ticket", async (ctx) => {
 router.post("/user/:id/refill", async (ctx) => {
   try {
     const newClovers = await refillUser(
+      ctx.$user.username,
       ctx.params.id,
-      ctx.request.body.newClovers
+      ctx.request.body.newClovers,
+      ctx.request.body.method,
+      ctx.request.body.sessionId
     );
     ctx.status = 200;
     ctx.body = { availableClovers: newClovers };
@@ -290,19 +407,51 @@ router.post("/user/:id/refill", async (ctx) => {
   }
 });
 
-router.post("/user/:id/new-order", async (ctx) => {
+router.post("/user/request-change", async (ctx) => {
   try {
-    const newClovers = await registerNewOrder(
-      ctx.params.id,
-      ctx.request.body.grandTotal
-    );
+    const passRequestCode = await requestPassChange(ctx.request.body.email)
     ctx.status = 200;
-    ctx.body = { availableClovers: newClovers };
+    ctx.body = passRequestCode
   } catch (error) {
     ctx.body = error;
     ctx.status = 500;
   }
 });
+
+router.post("/user/:id/change", async (ctx) => {
+  try {
+    const passChange = await processPassChange(ctx.params.id, ctx.request.body.code, ctx.request.body.newPass)
+    ctx.status = 200;
+    ctx.body = passChange
+  } catch (error) {
+    console.log(error)
+    ctx.body = error.message;
+    ctx.status = 500;
+  }
+});
+
+// ---- ORDERS ----
+
+router.post("/user/:id/new-order", async (ctx) => {
+  try {
+    const newClovers = await registerNewOrder(
+      ctx.params.id,
+      ctx.request.body.grandTotal,
+      ctx.request.body.content,
+      ctx.request.body.sessionId,
+      ctx.$user.username
+    );
+
+    ctx.status = 200;
+    ctx.body = { availableClovers: newClovers };
+  } catch (error) {
+    console.log(error);
+    ctx.body = error;
+    ctx.status = 500;
+  }
+});
+
+// ---- END APIs ----
 
 try {
   app.use(async (ctx, next) => {
