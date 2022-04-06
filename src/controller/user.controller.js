@@ -10,7 +10,7 @@ import {
   isUsernameUnique,
   isEmailUnique,
   isPhoneUnique,
-  fetchUserTemp,
+  fetchUserTemp, fetchUsersByAccessFromDB
 } from "../services/user.service.js";
 import {
   createUserInDb,
@@ -45,6 +45,11 @@ export const getUserById = async (id) => {
   delete user._doc.password;
   return user;
 };
+
+export const fetchAllUsersByAccess = async (access) => {
+  const userList = await fetchUsersByAccessFromDB(access)
+  return userList.length
+}
 
 export const fetchAllUsers = async (username) => {
   const userList = await getAllUsersFromDB();

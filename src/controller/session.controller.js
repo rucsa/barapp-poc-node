@@ -6,12 +6,16 @@ import {
 } from "../services/session.service.js";
 import { getActiveSessionTicketValue } from "../services/session.service.js";
 import { fetchCurrentSessionRefillVolume } from "./refill.controller.js";
-import { fetchCurrentSessionTicketStatus, getColdUsersClovs } from "./user.controller.js";
+import { fetchCurrentSessionTicketStatus, getColdUsersClovs, fetchAllUsersByAccess } from "./user.controller.js";
 import { fetchCurrentSessionOrderStatus, getAnonymousOrders, getMemberOrders } from "./order.controller.js";
 
 import log from "./../utils/logger.js";
 
 export const sessionStatus = async (sessionId, username) => {
+  // get users
+  const admins = await fetchAllUsersByAccess('ADMIN')
+  const staff = await fetchAllUsersByAccess('STAFF')
+  const members = await fetchAllUsersByAccess('MEMBER')
   // get tickets
   const tickets = await fetchCurrentSessionTicketStatus();
   // get orders total value
@@ -30,6 +34,8 @@ export const sessionStatus = async (sessionId, username) => {
     orderVirtuals,
     ticketCubes,
     orderCubes
+  }, users: {
+    admins, staff, members
   } };
 };
 

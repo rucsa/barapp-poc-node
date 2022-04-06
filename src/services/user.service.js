@@ -85,6 +85,11 @@ export const fetchUserTemp = async (method) => {
   return userList
 };
 
+export const fetchUsersByAccessFromDB = async (access) => {
+  const userList = await User.find({ accessLevel: access }).exec();
+  return userList
+};
+
 export const payUserEntrance = async (
   id,
   newCLovers,
