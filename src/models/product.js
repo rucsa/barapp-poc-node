@@ -14,8 +14,7 @@ const ProductSchema = new Schema({
   clovers: Number,
   color: String,
   textColor: String,
-  mix: [Recipe],
-  currentQty: Number,
+  mix: [Recipe]
 });
 
 export default mongoose.model("Product", ProductSchema);

@@ -4,9 +4,10 @@ import {
   getUserByUsernameFromDb,
   createUserInDb,
   isUsernameUnique,
-  isEmailUnique,
+  isEmailUnique, isPhoneUnique
 } from "./../services/user.service.js";
 import bcrypt from "bcryptjs";
+import log from './../utils/logger.js'
 const EMITTER_ID = "src/controller/auth.controller.js";
 
 // function isValidPassword(password) {
@@ -21,11 +22,13 @@ export const findUserByUsername = async (username) => {
 };
 
 export const register = async (newUserObj, creator) => {
+
   const usernameCheck = await isUsernameUnique(newUserObj.username);
   if (usernameCheck !== true) {
     throw new PrettyError({
       code: "username-taken",
-      message: "Username is taken!",
+      status: 400,
+      message: `Username ${newUserObj.username} is taken!`,
       inFile: EMITTER_ID,
     });
   }
@@ -34,10 +37,22 @@ export const register = async (newUserObj, creator) => {
   if (emailCheck !== true) {
     throw new PrettyError({
       code: "email-taken",
-      message: "Email is taken!",
+      status: 400,
+      message: `Email is taken!`,
       inFile: EMITTER_ID,
     });
   }
+
+    // validate unique phone
+    const phoneCheck = await isPhoneUnique(newUserObj.email);
+    if (phoneCheck !== true) {
+      throw new PrettyError({
+        code: "phone-taken",
+        status: 400,
+        message: `Phone is taken!`,
+        inFile: EMITTER_ID,
+      });
+    }
 
   //   if (!isValidPassword(newUserObj.password)) {
   //     throw new PrettyError({
@@ -56,10 +71,11 @@ export const register = async (newUserObj, creator) => {
     const plainPass = newUserObj.password;
     newUserObj.password = await bcrypt.hash(plainPass, 10);
     newUserObj.createdBy = creator;
-    newUserId = await createUserInDb(newUserObj);
-    return newUserId;
+    log(creator, `Creating new ${newUserObj.acceessLevel} -  username: ${newUserObj.username} - name: ${newUserObj.firstname} ${newUserObj.lastname}`, 'info')
+    return await createUserInDb(newUserObj);
   } catch (error) {
     throw new PrettyError({
+      status: 500,
       code: "auth.register.unknown",
       message: `Unknown error while register user for token ${newUserObj.username}!`,
       causedBy: error,
@@ -73,6 +89,7 @@ export const registerSimple = async (newUserObj, creator) => {
   if (usernameCheck !== true) {
     throw new PrettyError({
       code: "username-taken",
+      status: 400,
       message: "Username is taken!",
       inFile: EMITTER_ID,
     });
@@ -82,6 +99,7 @@ export const registerSimple = async (newUserObj, creator) => {
   if (emailCheck !== true) {
     throw new PrettyError({
       code: "email-taken",
+      status: 400,
       message: "Email is taken!",
       inFile: EMITTER_ID,
     });
@@ -91,11 +109,13 @@ export const registerSimple = async (newUserObj, creator) => {
   try {
     newUserObj.acceessLevel = "MEMBER";
     newUserObj.createdBy = creator;
-    const newUserId = await createUserInDb(newUserObj);
-    return newUserId;
+    log(creator, `Registering temp new ${newUserObj.acceessLevel} -  username: ${newUserObj.username} - name: ${newUserObj.firstname} ${newUserObj.lastname}`, 'info')
+    return await createUserInDb(newUserObj);
   } catch (error) {
+
     console.log(error)
     throw new PrettyError({
+      status: 500,
       code: "auth.register.unknown",
       message: `Unknown error while register user for token ${newUserObj.username}!`,
       causedBy: error,
@@ -107,35 +127,37 @@ export const registerSimple = async (newUserObj, creator) => {
 export const login = async (username, password) => {
   if (username == null || password == null) {
     throw new PrettyError({
+      status: 400,
       code: "incomplete_credentials",
-      message: "username or password missing from request.",
+      message: "Invalid credentials!",
       inFile: EMITTER_ID,
     });
   }
   const user = await getUserByUsernameFromDb(username);
   if (user == null) {
     throw new PrettyError({
+      status: 404,
       code: "user_not_found",
-      message: `username ${username} was not found in db.`,
+      message: `Invalid credentials!`,
       inFile: EMITTER_ID,
     });
   }
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
     throw new PrettyError({
+      status: 400,
       code: "invalid_password",
-      message: `invalid password for username ${username}`,
+      message: `Invalid credentials!`,
       inFile: EMITTER_ID,
     });
   }
-  const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24;
-  const expiresAtDate = new Date(expiresAt * 1000).toISOString();
-  console.log(expiresAtDate);
+  const expiresAt = Math.floor(Date.now()) + 3 * 60 * 60 * 1000;
+  const expiresAtDate = new Date(expiresAt).toISOString();
   const token = jwt.sign(
     {
       data: {
         username: user.username,
-        acceessLevel: user.acceessLevel != null ? user.acceessLevel : "MEMBER",
+        accessLevel: user.accessLevel != null ? user.accessLevel : "MEMBER",
       },
       // 60 seconds * 60 minutes * 24 = 1 day
       expiresAt,
@@ -143,6 +165,7 @@ export const login = async (username, password) => {
     //process.env.JWT_SECRET
     "HBocGnplIiwiiUEFjF1bHZvb"
   );
+  log(user.username, `Logged in with access level ${user.accessLevel}.`, 'info')
   return { token, expiresAt: expiresAtDate };
 };
 

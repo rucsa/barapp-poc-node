@@ -1,5 +1,6 @@
 import { createNewRefillInDB, getAllRefillsFromDB, getAllRefillsCurrentSessionFromDB } from "../services/refill.service.js";
 import Refill from './../models/refill.js'
+import log from './../utils/logger.js'
 
 export const createNewRefill = async (createdBy, beneficiaryName, newClovers, newAvailableClovers, method, sessionId) => {
   var newRef = new Refill();
@@ -13,8 +14,10 @@ export const createNewRefill = async (createdBy, beneficiaryName, newClovers, ne
   return await createNewRefillInDB(newRef);
 };
 
-export const fetchAllRefills = async () => {
-  return await getAllRefillsFromDB();
+export const fetchAllRefills = async (username) => {
+  const refills = await getAllRefillsFromDB();
+  log(username, `Viewed refills`, 'info')
+  return refills
 };
 
 export const fetchCurrentSessionRefillVolume = async (sessionId) => {

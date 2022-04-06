@@ -52,7 +52,6 @@ export const updateSessionInDB = async (sessionData, updatedBy) => {
   if (activeSessions.length === 0) return null;
 
   const session = activeSessions[0]
-  console.log(session)
   const currentTicketValue = session.currentTicketValue
 
   // record update history

@@ -5,6 +5,7 @@ import _ from 'lodash';
  * Inspire by the structure of errors in Java.
  * @param {String} code - Unique code
  * @param {String} message
+ * @param {Number} status
  * @param {String} inFile - Unique id of the inFile
  * @param {Object} [args]
  * @param {Error} [causedBy]
@@ -12,14 +13,14 @@ import _ from 'lodash';
  * @constructor
  */
 export default function PrettyError({
-  code, message, inFile, args = null, causedBy = null,
+  code, message, status, inFile, args = null, causedBy = null,
 }) {
   const instance = new Error(message);
 
   instance.name = 'PrettyError';
   instance.code = code;
   instance.inFile = inFile;
-  // TODO: Should the args be deep cloned?
+  instance.status = status;
   instance.args = args == null ? null : _.cloneDeep(args);
 
   const stack = (instance.stack || '')
@@ -27,6 +28,7 @@ export default function PrettyError({
 
   // returns the stack with the error's code, inFile and args included
   instance.fullStack = `${instance.name}(code=${code}): ${message}
+    status: ${status}
     inFile: ${inFile}
     args: ${JSON.stringify(args, null, 2)}
     ${stack}

@@ -1,5 +1,8 @@
 import Product from "../models/product.js";
 import { getStorageItemByProductCode } from "./storage.service.js";
+
+import log from "./../utils/logger.js";
+
 import mongoose from "mongoose";
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -31,43 +34,36 @@ export const updateProductInDB = async (id, newProd) => {
   }
 };
 
-export const updateProductQtyAtStorageUpdate = async (storageItem) => {
+export const updateProductQtyAtStorageUpdate = async (storageItem, username) => {
   const products = await Product.find({
     "mix.productCode": { $eq: storageItem.productCode },
   });
-  console.log(
-    `Found products used used by recently updated storage item ${storageItem.denumire}`
+  log(
+    username,
+    `Triggering product update used by ${storageItem.denumire}: ${products.map(a => a.denumire)}`,
+    "info"
   );
-
-  console.log(products);
   for (let product of products) {
     // decide which item from recipt has less total ml
     let minAvailabilePortions = Number.MAX_VALUE;
     for (let mixItem of product.mix) {
       const usedItem = await getStorageItemByProductCode(mixItem.productCode);
-      console.log("found product by code " + mixItem.productCode);
-      console.log(
-        `maxAvailablePortions = ${usedItem[0].size} * ${usedItem[0].qty} / ${mixItem.portie}`
-      );
       const maxAvailablePortions =
         (usedItem[0].size * usedItem[0].qty) / mixItem.portie;
-      console.log(
-        `We have ${maxAvailablePortions} portions of ${mixItem.productCode}`
-      );
+      
       if (minAvailabilePortions > maxAvailablePortions) {
         minAvailabilePortions = maxAvailablePortions;
       }
     }
 
-    console.log(
-      `Updating qty for ${product.denumire} with ${minAvailabilePortions}`
-    );
     try {
+      log(username, 
+        `Updating qty for product ${product.denumire} from ${ product.currentQty } portions to ${minAvailabilePortions} portions`
+      );
       product.currentQty = minAvailabilePortions;
       await Product.findOneAndUpdate({ _id: product._id }, product, {
         new: true,
       });
-      console.log(`Finished updating product item ${product.denumire}`);
     } catch (error) {
       console.log(error);
     }

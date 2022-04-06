@@ -16,7 +16,6 @@ export const updateStorageItemInDB = async (editedStorageDocument) => {
       new: true
     }
   );
-  console.log(`Updated storage item ${updateStatus.denumire}`)
   return updateStatus
 };
 

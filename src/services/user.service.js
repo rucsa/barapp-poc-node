@@ -9,8 +9,8 @@ export const getUserByEmail = async (userEmail) => {
   return user[0];
 };
 
-export const isUsernameUnique = async (username) => {
-  const user = await User.find({ username: { $eq: username } }).exec();
+export const isUsernameUnique = async (name) => {
+  const user = await User.find({ username: { $eq: name } }).exec();
   return user.length === 0
 };
 
@@ -80,6 +80,11 @@ export const updateUserBalance = async (id, newCLovers) => {
   return refillStatus.availableClovers;
 };
 
+export const fetchUserTemp = async (method) => {
+  const userList = await User.find({ accessLevel: "MEMBER", donationMethod: { $eq: method } }).exec();
+  return userList
+};
+
 export const payUserEntrance = async (
   id,
   newCLovers,
@@ -110,6 +115,6 @@ export const createUserInDb = async (user) => {
   const userSaved = await newUser.save().then(null, function (err) {
     throw new Error(err);
   });
-  console.log(userSaved)
-  return userSaved._id;
+  delete userSaved._doc.password
+  return newUser;
 };

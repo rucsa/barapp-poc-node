@@ -10,6 +10,7 @@ import {
   isUsernameUnique,
   isEmailUnique,
   isPhoneUnique,
+  fetchUserTemp,
 } from "../services/user.service.js";
 import {
   createUserInDb,
@@ -20,8 +21,10 @@ import {
 import { createNewOrder } from "./order.controller.js";
 import { substractOrderFromStorage } from "./storage.controller.js";
 import { getActiveSessionTicketValue } from "../services/session.service.js";
-
 import { createNewRefill } from "./refill.controller.js";
+
+import log from "./../utils/logger.js";
+
 const EMITTER_ID = "src/controller/user.controller.js";
 
 export const fetchCurrentSessionTicketStatus = async () => {
@@ -38,14 +41,28 @@ export const fetchCurrentSessionTicketStatus = async () => {
 };
 
 export const getUserById = async (id) => {
-  return await getUserByIdFromDb(id);
+  const user = await getUserByIdFromDb(id);
+  delete user._doc.password;
+  return user;
 };
 
-export const fetchAllUsers = async () => {
-  return await getAllUsersFromDB();
+export const fetchAllUsers = async (username) => {
+  const userList = await getAllUsersFromDB();
+  const cleanList = [];
+  userList.forEach((user) => {
+    delete user._doc.password;
+    cleanList.push(user);
+  });
+  log(username, `Fetching all users`, "info");
+  return userList;
 };
 
-export const userTicketPayment = async (id, ticket, donationMethod) => {
+export const userTicketPayment = async (
+  id,
+  ticket,
+  donationMethod,
+  username
+) => {
   let ticketValue;
   if (ticket == null) {
     ticketValue = await getActiveSessionTicketValue();
@@ -54,6 +71,10 @@ export const userTicketPayment = async (id, ticket, donationMethod) => {
   }
   const user = await getUserByIdFromDb(id);
   const newAvailableClovers = Number(user.availableClovers) - ticketValue;
+  log(
+    username,
+    `Exchanged ticket for ${donationMethod} (clovers) from member ${user.username}`
+  );
   const updatedClovers = await payUserEntrance(
     id,
     newAvailableClovers,
@@ -83,22 +104,32 @@ export const refillUser = async (
       method,
       sessionId
     );
-    console.log(`Created new refill by ${createdBy}`);
+    log(
+      createdBy,
+      `Created new refill of ${newClovers} clovers for ${user.username} by ${method}`
+    );
     return updatedClovers;
   } catch (error) {
     console.log(error);
   }
 };
 
-export const registerNewOrder = async (id, total, content, sessionId, user) => {
+export const registerNewOrder = async (
+  id,
+  total,
+  content,
+  sessionId,
+  username
+) => {
   let updatedClovers = total;
   let newOrderId = null;
   if (id === "undefined") {
     newOrderId = await createNewOrder(
       content,
       "Anonymous",
-      user,
-      Number(total)
+      username,
+      Number(total),
+      sessionId
     );
   } else {
     // Update user balance
@@ -110,17 +141,18 @@ export const registerNewOrder = async (id, total, content, sessionId, user) => {
     newOrderId = await createNewOrder(
       content,
       client.username,
-      user,
+      username,
       Number(total),
       sessionId
     );
   }
 
   // substract portions from storage
-  if (newOrderId != null) {
-    await substractOrderFromStorage(content);
+  try {
+    await substractOrderFromStorage(content, username);
+  } catch (err) {
+    console.log(err);
   }
-  return updatedClovers;
 };
 
 export const registerUser = async (newUserData) => {
@@ -152,6 +184,7 @@ export const registerUser = async (newUserData) => {
     });
   }
   const user = await createUserInDb(newUserData);
+  delete user._doc.password;
   return user;
 };
 
@@ -194,4 +227,15 @@ export const processPassChange = async (id, code, newPass) => {
   }
   const cryptePass = await bcrypt.hash(newPass, 10);
   return await changePassForUser(id, cryptePass);
+};
+
+export const getColdUsersClovs = async (method) => {
+  const users = await fetchUserTemp(method);
+  var clovs = 0;
+  users.forEach((u) => {
+    if (u.ticketDonationValue != null) {
+      clovs += u.ticketDonationValue;
+    }
+  });
+  return clovs
 };
