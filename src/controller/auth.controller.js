@@ -151,7 +151,7 @@ export const login = async (username, password) => {
       inFile: EMITTER_ID,
     });
   }
-  const expiresAt = Math.floor(Date.now()) + 3 * 60 * 60 * 1000;
+  const expiresAt = Math.floor(Date.now()) + 6 * 60 * 60 * 1000;
   const expiresAtDate = new Date(expiresAt).toISOString();
   const token = jwt.sign(
     {
@@ -165,7 +165,7 @@ export const login = async (username, password) => {
     //process.env.JWT_SECRET
     "HBocGnplIiwiiUEFjF1bHZvb"
   );
-  log(user.username, `Logged in with access level ${user.accessLevel}.`, 'info')
+  log(user.username, `Logged in with access level ${user.accessLevel} until ${expiresAtDate}.`, 'info')
   return { token, expiresAt: expiresAtDate };
 };
 
