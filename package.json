@@ -27,7 +27,8 @@
     "koa-unless": "^1.0.7",
     "lodash": "^4.17.21",
     "mongoose": "^6.2.6",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "qrcode": "^1.5.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.17.6",

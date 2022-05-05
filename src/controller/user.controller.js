@@ -10,8 +10,11 @@ import {
   isUsernameUnique,
   isEmailUnique,
   isPhoneUnique,
-  fetchUserTemp, fetchUsersByAccessFromDB
+  fetchUserTemp,
+  fetchUsersByAccessFromDB,
 } from "../services/user.service.js";
+
+import { fetchMemberData } from "../controller/member.controller.js";
 import {
   createUserInDb,
   getAllUsersFromDB,
@@ -41,15 +44,25 @@ export const fetchCurrentSessionTicketStatus = async () => {
 };
 
 export const getUserById = async (id) => {
-  const user = await getUserByIdFromDb(id);
+  let user = await getUserByIdFromDb(id);
+  const userStatus = await fetchMemberData(id);
+
   delete user._doc.password;
+  if (user != null) {
+    user = user.toObject();
+    user.availableClovers = userStatus.availableClovers;
+    user.checkedIn = userStatus.checkedIn;
+    user.hasTicket = userStatus.hasTicket;
+  }
+
+  console.log(user);
   return user;
 };
 
 export const fetchAllUsersByAccess = async (access) => {
-  const userList = await fetchUsersByAccessFromDB(access)
-  return userList.length
-}
+  const userList = await fetchUsersByAccessFromDB(access);
+  return userList.length;
+};
 
 export const fetchAllUsers = async (username) => {
   const userList = await getAllUsersFromDB();
@@ -242,5 +255,5 @@ export const getColdUsersClovs = async (method) => {
       clovs += u.ticketDonationValue;
     }
   });
-  return clovs
+  return clovs;
 };
