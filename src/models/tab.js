@@ -11,6 +11,8 @@ const TabSchema = new Schema({
   createdAt: Date,
   createdBy: String,
   lastUpdatedAt: Date,
+  donationMethod: String,
+  ticketDonationValue: Number
 });
 
 export default mongoose.model("Tab", TabSchema);

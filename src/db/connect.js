@@ -5,7 +5,7 @@ const initDB = () => {
 
   // -- conn data --
   // vps remote
-  //mongoose.connect('mongodb://dev:Triptease@89.46.7.105:27017/tc-admin');
+ // mongoose.connect('mongodb://dev:Triptease@89.46.7.105:27017/tc-admin');
   // vps deploy
   //mongoose.connect("mongodb://dev:Triptease@localhost:27017/tc-admin");
   // local dev

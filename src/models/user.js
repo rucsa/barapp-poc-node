@@ -10,7 +10,7 @@ const UserSchema = new Schema({
   lastname: String,
   phone: String,
   email: String,
-  availableClovers: Number,
+  remainingClovers: Number,
   guestOf: String,
   createdAt: Date,
   createdBy: String,

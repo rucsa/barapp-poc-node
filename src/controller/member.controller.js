@@ -1,7 +1,6 @@
 import log from "./../utils/logger.js";
 import { getUserByIdFromDb } from "./../services/user.service.js";
-import { getUserCurrentCheckin, createNewCheckin } from "./../services/checkin.service.js";
-import { getUserCurrentTab, createNewTab } from "./../services/tab.service.js";
+import { getUserCurrentTab, createNewTab, hasTabThisSession } from "./../services/tab.service.js";
 import { getActiveSession } from "./../controller/session.controller.js";
 import qrcode from "qrcode";
 import mongoose from "mongoose";
@@ -25,17 +24,18 @@ async function constructMemberObject(userId) {
   if (session != null) {
     userStatus.activeSession = true;
 
-    const checkin = await getUserCurrentCheckin(user.username, session._id);
-    let tab = await getUserCurrentTab(user.username, session._id);
-
-    if (tab == null) {
-      // create tab if it does not exist
+    const hasCheckedIn = await hasTabThisSession(user._id, session._id);
+    let tab
+    if (!hasCheckedIn) {
       tab = await createNewTab(user, session._id);
+    } else {
+     tab = await getUserCurrentTab(user.username, session._id);
     }
+   
 
     userStatus.availableClovers = tab.availableClovers;
-    userStatus.checkedIn = checkin == null ? false : true;
-    userStatus.hasTicket = checkin == null ? false : checkin.hasTicket;
+    userStatus.checkedIn = hasCheckedIn;
+    userStatus.hasTicket = hasCheckedIn === true ? tab.donationMethod != null && tab.donationMethod != '' : false
   } else {
     userStatus.activeSession = false;
   }
@@ -66,12 +66,11 @@ export const fetchMemberQR = async (userId) => {
   }
 };
 
+export const hasCheckedIn = async (sessionId, userId) => {
+  return await hasTabThisSession(userId, sessionId)
+}
+
 export const checkMemberIn = async (username, sessionId, userId) => {
-    if (sessionId instanceof ObjectId) {
-        await createNewCheckin(username, sessionId.toString())
-    } else if (sessionId instanceof String){
-        await createNewCheckin(username, sessionId)
-    }
-    return await constructMemberObject(userId)
+    return  await createNewTab(userId, sessionId, username);
 }
 

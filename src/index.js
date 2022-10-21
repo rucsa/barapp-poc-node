@@ -7,6 +7,7 @@ import bodyParser from "koa-bodyparser";
 import Path from "path";
 import { config } from "dotenv";
 import Router from "koa-router";
+
 import {
   getUserById,
   fetchAllUsers,
@@ -57,7 +58,9 @@ initDB();
 config({ path: Path.resolve(".env") });
 
 const app = new Koa();
-const router = new Router();
+const router = new Router({
+  prefix: '/api'
+});
 
 app.use(async (ctx, next) => {
   try {
@@ -78,7 +81,7 @@ app.use(
   jwt({
     secret: "HBocGnplIiwiiUEFjF1bHZvb",
   }).unless({
-    path: ["/auth/login", "/register", "/user/request-change"],
+    path: ["/api/auth/login", "/register", "/user/request-change"],
   })
 );
 
@@ -141,6 +144,7 @@ router.post("/register", async (ctx) => {
     }
   }),
   router.post("/auth/login", async (ctx) => {
+    console.log(ctx)
     try {
       const userLoging = await login(
         ctx.request.body.username,
@@ -157,6 +161,7 @@ router.post("/register", async (ctx) => {
   router.get("/auth/user", async (ctx) => {
     try {
       const user = ctx.$user;
+      log(user);
       delete user._doc.password;
       ctx.status = 200;
       ctx.body = user;
@@ -166,6 +171,12 @@ router.post("/register", async (ctx) => {
     }
   }),
   // ---- MEMBERS ----
+  router.post("/member/has-checked-in", async (ctx) => {
+    const userStatus = await hasCheckedIn(ctx.$user.username, ctx.request.body.sessionId, ctx.$user._id)
+    ctx.status = 200;
+    ctx.body = userStatus;
+  });
+
   router.post("/member/checkin", async (ctx) => {
     const userStatus = await checkMemberIn(ctx.$user.username, ctx.request.body.sessionId, ctx.$user._id)
     ctx.status = 200;
@@ -530,6 +541,7 @@ router.post("/user/:id/new-order", async (ctx) => {
 
 try {
   app.use(async (ctx, next) => {
+    console.log(ctx)
     const jwtUser = ctx.state?.user?.data;
     if (jwtUser != null && jwtUser.username) {
       try {
@@ -539,6 +551,7 @@ try {
         }
       } catch (ex) {
         console.log(ex);
+        console.log(ex.message);
         ctx.status = 401;
         return;
       }

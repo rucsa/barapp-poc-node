@@ -7,17 +7,16 @@ export const getUserCurrentTab = async (username, sessionId) => {
     username: username,
     sessionId: sessionId,
   }).exec();
-  if (tab.length === 0 ) return null
+  if (tab.length === 0) return null;
   else return tab[0];
 };
 
-export const createNewTab = async (user, sessionId) => {
+export const createNewTab = async (user, sessionId, createdByUsername) => {
   var newTab = new Tab();
   const tabId = ObjectId();
   newTab._id = tabId;
   newTab.createdAt = Date.now();
-  newTab.createdBy = "", 
-  newTab.username = user.username;
+  (newTab.createdBy = createdByUsername), (newTab.username = user.username);
   newTab.payedTicketThisSession = false;
   newTab.userId = user._id.toString();
   newTab.sessionId = sessionId;
@@ -27,4 +26,13 @@ export const createNewTab = async (user, sessionId) => {
     throw new Error(err);
   });
   return newTab;
+};
+
+export const hasTabThisSession = async (userId, sessionId) => {
+  const tab = await Tab.find({
+    userId,
+    sessionId,
+  }).exec();
+  if (tab.length === 0) return false;
+  else return true;
 };

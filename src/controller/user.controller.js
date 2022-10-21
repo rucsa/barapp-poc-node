@@ -50,9 +50,8 @@ export const getUserById = async (id) => {
   delete user._doc.password;
   if (user != null) {
     user = user.toObject();
-    user.availableClovers = userStatus.availableClovers;
+    user.remainingClovers = userStatus.remainingClovers;
     user.checkedIn = userStatus.checkedIn;
-    user.hasTicket = userStatus.hasTicket;
   }
 
   console.log(user);
